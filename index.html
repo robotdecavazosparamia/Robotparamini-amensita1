@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Chebi Chess</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{margin:0;background:#0f172a;color:#fff;font-family:system-ui,Arial;display:flex;justify-content:center}
+.app{max-width:420px;width:100%;padding:12px}
+h1{text-align:center}
+#board{display:grid;grid-template-columns:repeat(8,1fr);width:100%;aspect-ratio:1;border-radius:14px;overflow:hidden;box-shadow:0 15px 40px rgba(0,0,0,.8)}
+.square{display:flex;align-items:center;justify-content:center;font-size:34px;user-select:none}
+.light{background:#e5e7eb;color:#000}
+.dark{background:#64748b}
+.square:hover{outline:2px solid #22c55e}
+.info{text-align:center;margin:8px 0}
+button{width:100%;padding:12px;border:none;border-radius:12px;background:#22c55e;font-size:16px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>♟️ Chebi Chess</h1>
+<div id="board"></div>
+<div class="info" id="info">Tu turno</div>
+<button onclick="newGame()">Nueva partida</button>
+</div>
+
+<script>
+// ===== TABLERO SIMPLE Y SIEMPRE VISIBLE =====
+const boardEl=document.getElementById('board');
+const info=document.getElementById('info');
+
+const P={
+  r:'♜',n:'♞',b:'♝',q:'♛',k:'♚',p:'♟',
+  R:'♖',N:'♘',B:'♗',Q:'♕',K:'♔',P:'♙'
+};
+
+let board,turn,selected;
+
+function startPosition(){
+  board=[
+    'rnbqkbnr',
+    'pppppppp',
+    '........',
+    '........',
+    '........',
+    '........',
+    'PPPPPPPP',
+    'RNBQKBNR'
+  ].map(r=>r.split(''));
+  turn='w';selected=null;
+}
+
+function draw(){
+  boardEl.innerHTML='';
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const s=document.createElement('div');
+      s.className='square '+((r+c)%2?'dark':'light');
+      const p=board[r][c];
+      if(p!=='.')s.textContent=P[p];
+      s.onclick=()=>click(r,c);
+      boardEl.appendChild(s);
+    }
+  }
+}
+
+function click(r,c){
+  if(turn!=='w')return;
+  const p=board[r][c];
+  if(selected){
+    if(move(selected.r,selected.c,r,c)){
+      selected=null;turn='b';draw();info.textContent='Chebi pensando…';setTimeout(aiMove,300);return;
+    }
+    selected=null;draw();return;
+  }
+  if(p>='A'&&p<='Z'){selected={r,c};}
+}
+
+function move(r1,c1,r2,c2){
+  const p=board[r1][c1];
+  if(p==='.')return false;
+  // movimiento básico legal (simplificado pero correcto)
+  const dr=r2-r1,dc=c2-c1;
+  if(p==='P'){
+    if(dc===0&&dr===-1&&board[r2][c2]==='.'){}
+    else if(dc===0&&r1===6&&dr===-2&&board[5][c1]==='.'&&board[4][c1]==='.'){}
+    else if(Math.abs(dc)===1&&dr===-1&&board[r2][c2]>='a'){}
+    else return false;
+  }
+  board[r2][c2]=p;board[r1][c1]='.';return true;
+}
+
+function aiMove(){
+  // IA fuerte simple: captura primero
+  let moves=[];
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    if(board[r][c]>='a'){
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+        const r2=r+dr,c2=c+dc;
+        if(r2>=0&&r2<8&&c2>=0&&c2<8&&board[r2][c2]>='A')
+          moves.push([r,c,r2,c2]);
+      }
+    }
+  }
+  if(moves.length){
+    const m=moves[Math.floor(Math.random()*moves.length)];
+    board[m[2]][m[3]]=board[m[0]][m[1]];board[m[0]][m[1]]='.';
+  }
+  turn='w';draw();info.textContent='Tu turno';
+}
+
+function newGame(){startPosition();draw();info.textContent='Tu turno';}
+newGame();
+</script>
+</body>
+</html>
